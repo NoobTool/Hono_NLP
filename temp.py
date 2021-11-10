@@ -27,9 +27,16 @@ def return_education_points(index):
 
 # Function to determine the headings in the resume
 def return_headings(lines):
-    print(lines)
-    
-return_headings(lines)
+     headings_list = {}   
+     for lineNo in range(len(lines)):
+         try:
+             if re.match("--\\t*",lines[lineNo])==None and re.match("--\\t*",lines[lineNo+1]):
+                 headings_list[lines[lineNo].strip()] = lineNo
+         except IndexError:
+             break
+     return headings_list
+
+print(return_headings(lines))
 
 
 
