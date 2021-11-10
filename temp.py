@@ -1,19 +1,23 @@
 from docx2python import docx2python
 import re
 from docx import Document
+import os
 
-file_path = 'Resumes/PS.docx'
-document = docx2python(file_path)
-doc2 = docx2python(file_path,html=True)
-doc = Document(file_path)
-text = document.text
-lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
 
+def init_docs(fileName):
+    file_path = 'Resumes/{}.docx'.format(fileName)
+    document = docx2python(file_path)
+    # doc2 = docx2python(file_path,html=True)
+    doc = Document(file_path)
+    text = document.text
+    lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
+
+    return lines,doc,document
 
 # Returns the educational qualifications from the starting index of educational section
-def return_education_points(headingsDict,bold_text):
+def return_education_points(lines, headingsDict, bold_text):
     
-    education_qualifications = []
+    # education_qualifications = []
     desired_index=None
     next_index = None
     
@@ -50,6 +54,9 @@ def return_education_points(headingsDict,bold_text):
             return lines[desired_index+1:next_index]
         else:
             return lines[desired_index+1:len(lines)]
+        
+    else:
+        return check_each_line(lines,document)
 
 # Function to determine the headings in the resume
 def return_headings(lines):
@@ -64,12 +71,9 @@ def return_headings(lines):
      return headingsDict
 
 
-# Check for bold text 2
-def return_bold2():
-    print(doc2.text)
 
 # Check for bold text
-def return_bold_text():
+def return_bold_text(doc,lines):
     
     # Dictionary for bold text
     bold_text = {}
@@ -93,7 +97,7 @@ def return_bold_text():
     return bold_text_priority
 
 
-def check_each_line():
+def check_each_line(lines,document):
     lines = document.text.splitlines(True)
     lines2 = [line for line in lines if len(line.split(" "))<7]
     education_lines = [line for line in lines2 if re.match("educat*",line,re.I)]
@@ -109,11 +113,11 @@ def check_each_line():
             pass
             
         
-    education_lines = lines[starting_index:ending_index]
+    education_lines = lines[starting_index:ending_index-1]
     education_lines = list(filter(('\n').__ne__,education_lines))
     education_lines = [line.replace('\n','') for line in education_lines]
     
-    print(education_lines)
+    return education_lines
 
 
 # Formatting and refining the output
@@ -123,10 +127,18 @@ def format_points(education_points):
     return education_points
     
 
-check_each_line()
-
 #%% This cell is just used to print stuff
 # print("\n\n",format_points(return_education_points(return_headings(lines),return_bold_text())))
 
+cwd = os.getcwd()
+getCurrentFileNames = os.listdir(cwd+"/Resumes/")
+
+for files in getCurrentFileNames:
+    fileName = files.split(".")[0]
+    lines,doc,document = init_docs(fileName)
+    with open(cwd+"/Output/"+fileName+".txt","w") as f:
+        content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)))
+        for content in content_to_be_written:
+            f.write(content+"\n")
 
     
