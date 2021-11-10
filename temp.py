@@ -9,7 +9,7 @@ lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
 
 
 # Returns the educational qualifications from the starting index of educational section
-def return_education_points(headingsDict):
+def return_education_points(headingsDict,bold_text):
     education_qualifications = []
     desired_index=None
     next_index = None
@@ -21,7 +21,18 @@ def return_education_points(headingsDict):
         if desired_index is not None:
             break
         
-        if re.match("education*",headings,re.I):
+        if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+            desired_index = index
+            continue
+        
+    for headings,index in bold_text.items():
+        next_index = index
+        
+        # Break the loop when we have both the educational section and the next column's index
+        if desired_index is not None:
+            break
+        
+        if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
             desired_index = index
             continue
         
@@ -56,28 +67,31 @@ def return_bold_text():
     
     # Dictionary for bold and capital text
     bold_text_priority = {}
-    i=0
     for paragraph in doc.paragraphs:
-        i+=1
         for run in paragraph.runs:
             
             # Headings in resumes do not take more than 7 words, doesn't contain special chars and numbers
             if run.bold and len(run.text.split(" "))<7 and re.search("[,:]", run.text) is None and re.search("[0-9]",paragraph.text) is None:
                 
                 # Lines with all words in capital have more chances to be in headings
-                if run.text.isupper():
-                    bold_text_priority[run.text.strip()]=i
-                else:
-                    bold_text[run.text.strip()]=i
-                    
-    print(bold_text_priority)
+                try:
+                    if run.text.isupper():
+                        bold_text_priority[run.text]=lines.index(run.text)
+                    else:
+                        bold_text[run.text]=lines.index(run.text)
+                except ValueError:
+                    pass
+           
+    return bold_text_priority
 
 
 # Formatting and refining the output
 def format_points(education_points):
-    if education_points is not None: return [points[3:] for points in education_points]
-
-print(format_points(return_education_points(return_headings(lines))))
+    education_points = [points.replace("--\\t","") for points in education_points]
+    education_points = [points.replace("\t","") for points in education_points]
+    return education_points
+    
+print(format_points(return_education_points(return_headings(lines),return_bold_text())))
 return_bold_text()
 
 # print(lines[154:])
