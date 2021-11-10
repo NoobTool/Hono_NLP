@@ -2,17 +2,20 @@ from docx2python import docx2python
 import re
 from docx import Document
 
-document = docx2python('Resumes/AS.docx')
-doc = Document('Resumes/AS.docx')
+file_path = 'Resumes/SK.docx'
+document = docx2python(file_path)
+doc = Document(file_path)
 text = document.text
 lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
 
 
 # Returns the educational qualifications from the starting index of educational section
 def return_education_points(headingsDict,bold_text):
+    
     education_qualifications = []
     desired_index=None
     next_index = None
+    
     
     for headings,index in headingsDict.items():
         next_index = index
@@ -24,17 +27,18 @@ def return_education_points(headingsDict,bold_text):
         if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
             desired_index = index
             continue
-        
-    for headings,index in bold_text.items():
-        next_index = index
-        
-        # Break the loop when we have both the educational section and the next column's index
-        if desired_index is not None:
-            break
-        
-        if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
-            desired_index = index
-            continue
+    
+    if desired_index is None:
+        for headings,index in bold_text.items():
+            next_index = index
+            
+            # Break the loop when we have both the educational section and the next column's index
+            if desired_index is not None:
+                break
+            
+            if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+                desired_index = index
+                continue
         
         
     # If an educational section exists
@@ -71,8 +75,7 @@ def return_bold_text():
         for run in paragraph.runs:
             
             # Headings in resumes do not take more than 7 words, doesn't contain special chars and numbers
-            if run.bold and len(run.text.split(" "))<7 and re.search("[,:]", run.text) is None and re.search("[0-9]",paragraph.text) is None:
-                
+            if (run.bold or re.sub("[,:]","",run.text).isupper()) and len(run.text.split(" "))<7 and re.search("[0-9]",paragraph.text) is None:
                 # Lines with all words in capital have more chances to be in headings
                 try:
                     if run.text.isupper():
@@ -80,8 +83,7 @@ def return_bold_text():
                     else:
                         bold_text[run.text]=lines.index(run.text)
                 except ValueError:
-                    pass
-           
+                    pass         
     return bold_text_priority
 
 
@@ -91,7 +93,7 @@ def format_points(education_points):
     education_points = [points.replace("\t","") for points in education_points]
     return education_points
     
-print(format_points(return_education_points(return_headings(lines),return_bold_text())))
+print("\n\n",format_points(return_education_points(return_headings(lines),return_bold_text())))
 return_bold_text()
 
 # print(lines[154:])
