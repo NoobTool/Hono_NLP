@@ -2,8 +2,9 @@ from docx2python import docx2python
 import re
 from docx import Document
 
-file_path = 'Resumes/SK.docx'
+file_path = 'Resumes/PS.docx'
 document = docx2python(file_path)
+doc2 = docx2python(file_path,html=True)
 doc = Document(file_path)
 text = document.text
 lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
@@ -63,6 +64,10 @@ def return_headings(lines):
      return headingsDict
 
 
+# Check for bold text 2
+def return_bold2():
+    print(doc2.text)
+
 # Check for bold text
 def return_bold_text():
     
@@ -83,8 +88,32 @@ def return_bold_text():
                     else:
                         bold_text[run.text]=lines.index(run.text)
                 except ValueError:
-                    pass         
+                    pass      
+    print(bold_text_priority)
     return bold_text_priority
+
+
+def check_each_line():
+    lines = document.text.splitlines(True)
+    lines2 = [line for line in lines if len(line.split(" "))<7]
+    education_lines = [line for line in lines2 if re.match("educat*",line,re.I)]
+    starting_index = lines.index(education_lines[0])+1
+    ending_index = len(lines)
+    
+    for x in range(starting_index,len(lines)):
+        try:
+            if lines[x+1]=='\n' and lines[x+2]=='\n':
+                ending_index = x+2
+                
+        except IndexError:
+            pass
+            
+        
+    education_lines = lines[starting_index:ending_index]
+    education_lines = list(filter(('\n').__ne__,education_lines))
+    education_lines = [line.replace('\n','') for line in education_lines]
+    
+    print(education_lines)
 
 
 # Formatting and refining the output
@@ -93,13 +122,11 @@ def format_points(education_points):
     education_points = [points.replace("\t","") for points in education_points]
     return education_points
     
-print("\n\n",format_points(return_education_points(return_headings(lines),return_bold_text())))
-return_bold_text()
 
-# print(lines[154:])
+check_each_line()
 
 #%% This cell is just used to print stuff
+# print("\n\n",format_points(return_education_points(return_headings(lines),return_bold_text())))
 
-# education_lines=return_education_index(lines)
-# print(return_education_points(education_lines)[:3])    
+
     
