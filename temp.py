@@ -1,7 +1,10 @@
 from docx2python import docx2python
 import re
+from docx import Document
 
-text = docx2python('SK.docx').text
+document = docx2python('Resumes/AS.docx')
+doc = Document('Resumes/AS.docx')
+text = document.text
 lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
 
 
@@ -41,15 +44,43 @@ def return_headings(lines):
                  headingsDict[lines[lineNo].strip()] = lineNo
          except IndexError:
              break
+     print("Headings are:- ",headingsDict)
      return headingsDict
+
+
+# Check for bold text
+def return_bold_text():
+    
+    # Dictionary for bold text
+    bold_text = {}
+    
+    # Dictionary for bold and capital text
+    bold_text_priority = {}
+    i=0
+    for paragraph in doc.paragraphs:
+        i+=1
+        for run in paragraph.runs:
+            
+            # Headings in resumes do not take more than 7 words, doesn't contain special chars and numbers
+            if run.bold and len(run.text.split(" "))<7 and re.search("[,:]", run.text) is None and re.search("[0-9]",paragraph.text) is None:
+                
+                # Lines with all words in capital have more chances to be in headings
+                if run.text.isupper():
+                    bold_text_priority[run.text.strip()]=i
+                else:
+                    bold_text[run.text.strip()]=i
+                    
+    print(bold_text_priority)
+
 
 # Formatting and refining the output
 def format_points(education_points):
     if education_points is not None: return [points[3:] for points in education_points]
 
 print(format_points(return_education_points(return_headings(lines))))
+return_bold_text()
 
-
+# print(lines[154:])
 
 #%% This cell is just used to print stuff
 
