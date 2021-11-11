@@ -97,6 +97,7 @@ def return_bold_text(doc,lines):
     return bold_text_priority
 
 
+# Check each line for educational qualifications
 def check_each_line(lines,document):
     lines = document.text.splitlines(True)
     lines2 = [line for line in lines if len(line.split(" "))<7]
@@ -121,24 +122,30 @@ def check_each_line(lines,document):
 
 
 # Formatting and refining the output
-def format_points(education_points):
-    education_points = [points.replace("--\\t","") for points in education_points]
-    education_points = [points.replace("\t","") for points in education_points]
+def format_points(education_points,*charReplacements):
+    
+    for replacement in charReplacements:
+        education_points = [points.replace(replacement,"") for points in education_points]
+        
+    # education_points = [points.replace("--\\t","") for points in education_points]
+    # education_points = [points.replace("\t","") for points in education_points]
     return education_points
     
 
 #%% This cell is just used to print stuff
 # print("\n\n",format_points(return_education_points(return_headings(lines),return_bold_text())))
 
-cwd = os.getcwd()
-getCurrentFileNames = os.listdir(cwd+"/Resumes/")
-
-for files in getCurrentFileNames:
-    fileName = files.split(".")[0]
-    lines,doc,document = init_docs(fileName)
-    with open(cwd+"/Output/"+fileName+".txt","w") as f:
-        content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)))
-        for content in content_to_be_written:
-            f.write(content+"\n")
-
+if __name__ == '__main__':
+    cwd = os.getcwd()
+    getCurrentFileNames = os.listdir(cwd+"/Resumes/")
     
+    for files in getCurrentFileNames:
+        fileName = files.split(".")[0]
+        try:
+            lines,doc,document = init_docs(fileName)
+            with open(cwd+"/Output/"+fileName+".txt","w") as f:
+                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)),"--\\t","\t")
+                for content in content_to_be_written:
+                    f.write(content+"\n")
+        except FileNotFoundError:
+            print("The docx version of this file does't exist.")
