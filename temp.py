@@ -2,9 +2,10 @@ from docx2python import docx2python
 import re
 from docx import Document
 import os
+import pdfplumber
+import pandas as pd
 
-
-def init_docs(fileName):
+def init_docx(fileName):
     file_path = 'Resumes/{}.docx'.format(fileName)
     document = docx2python(file_path)
     # doc2 = docx2python(file_path,html=True)
@@ -13,6 +14,15 @@ def init_docs(fileName):
     lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
 
     return lines,doc,document
+
+
+def init_pdf(fileName):
+    with pdfplumber.open(r"./Resumes/{}.pdf".format(fileName)) as pdf:
+        text = pdf.pages[0].extract_text()
+        lines = text.split("\n")
+
+    return lines,doc
+
 
 # Returns the educational qualifications from the starting index of educational section
 def return_education_points(lines, headingsDict, bold_text):
@@ -63,7 +73,8 @@ def return_headings(lines):
      headingsDict = {}   
      for lineNo in range(len(lines)):
          try:
-             if re.match("--\\t*",lines[lineNo])==None and re.match("--\\t*",lines[lineNo+1]):
+             if (re.match("--\\t*",lines[lineNo])==None and re.match("--\\t*",lines[lineNo+1])) or\
+             (re.match('\uf0b7+',lines[lineNo]) is None and re.match('\uf0b7+',lines[lineNo+1]) is not None):
                  headingsDict[lines[lineNo].strip()] = lineNo
          except IndexError:
              break
@@ -136,16 +147,29 @@ def format_points(education_points,*charReplacements):
 # print("\n\n",format_points(return_education_points(return_headings(lines),return_bold_text())))
 
 if __name__ == '__main__':
+    
+    df = pd.DataFrame(columns=['Name','Qualifications'])
+    
     cwd = os.getcwd()
     getCurrentFileNames = os.listdir(cwd+"/Resumes/")
     
     for files in getCurrentFileNames:
-        fileName = files.split(".")[0]
+        fileName = files.split(".")
+        print(fileName)
         try:
-            lines,doc,document = init_docs(fileName)
-            with open(cwd+"/Output/"+fileName+".txt","w") as f:
+            if fileName[1]=='docx':
+                lines,doc,document = init_docx(fileName[0])
                 content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)),"--\\t","\t")
-                for content in content_to_be_written:
-                    f.write(content+"\n")
+            else:
+                lines,doc = init_pdf(fileName[0])
+                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)),"\uf0b7")
+                
+            df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
+                
+
+            # The code to write the output in a text file
+            # with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
+            #     for content in content_to_be_written:
+            #         f.write(content+"\n")
         except FileNotFoundError:
             print("The docx version of this file does't exist.")
