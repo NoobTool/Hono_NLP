@@ -5,6 +5,7 @@ import os
 import pdfplumber
 import pandas as pd
 
+
 def init_docx(fileName):
     file_path = 'Resumes/{}.docx'.format(fileName)
     document = docx2python(file_path)
@@ -27,11 +28,10 @@ def init_pdf(fileName):
 # Returns the educational qualifications from the starting index of educational section
 def return_education_points(lines, headingsDict, bold_text):
     
-    # education_qualifications = []
     desired_index=None
     next_index = None
     
-    
+     
     for headings,index in headingsDict.items():
         next_index = index
         
@@ -82,7 +82,6 @@ def return_headings(lines):
      return headingsDict
 
 
-
 # Check for bold text
 def return_bold_text(doc,lines):
     
@@ -113,24 +112,26 @@ def check_each_line(lines,document):
     lines = document.text.splitlines(True)
     lines2 = [line for line in lines if len(line.split(" "))<7]
     education_lines = [line for line in lines2 if re.match("educat*",line,re.I)]
-    starting_index = lines.index(education_lines[0])+1
-    ending_index = len(lines)
-    
-    for x in range(starting_index,len(lines)):
-        try:
-            if lines[x+1]=='\n' and lines[x+2]=='\n':
-                ending_index = x+2
-                
-        except IndexError:
-            pass
-            
+    try:
+        starting_index = lines.index(education_lines[0])+1
+        ending_index = len(lines)
         
-    education_lines = lines[starting_index:ending_index-1]
-    education_lines = list(filter(('\n').__ne__,education_lines))
-    education_lines = [line.replace('\n','') for line in education_lines]
-    
-    return education_lines
+        for x in range(starting_index,len(lines)):
+            try:
+                if lines[x+1]=='\n' and lines[x+2]=='\n':
+                    ending_index = x+2
+                    
+            except IndexError:
+                pass
+                
+        education_lines = lines[starting_index:ending_index-1]
+        education_lines = list(filter(('\n').__ne__,education_lines))
+        education_lines = [line.replace('\n','') for line in education_lines]
+        
+        return education_lines
 
+    except IndexError:
+        return ["404"]
 
 # Formatting and refining the output
 def format_points(education_points,*charReplacements):
@@ -156,7 +157,6 @@ if __name__ == '__main__':
     
     for files in getCurrentFileNames:
         fileName = files.split(".")
-        print(fileName)
         try:
             if fileName[1]=='docx':
                 lines,doc,document = init_docx(fileName[0])
@@ -172,5 +172,16 @@ if __name__ == '__main__':
             # with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
             #     for content in content_to_be_written:
             #         f.write(content+"\n")
+        
         except FileNotFoundError:
             print("The docx version of this file does't exist.")
+            
+            
+            
+#%% Failure count
+
+series_of_failures = df['Qualifications'].apply(lambda x: 1 if '404' in x else 0).tolist()
+print(series_of_failures.count(0)*100/len(series_of_failures))
+
+
+
