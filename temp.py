@@ -148,6 +148,7 @@ def format_points(education_points,*charReplacements):
 
 if __name__ == '__main__':
     
+    # Using dataframes to carry the content of all resumes
     df = pd.DataFrame(columns=['Name','Qualifications'])
     
     cwd = os.getcwd()
