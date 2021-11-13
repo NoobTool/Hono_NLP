@@ -17,7 +17,7 @@ def init_docx(fileName):
     return lines,doc,document
 
 
-lines,doc,document = init_docx("Anuj Kumar")
+lines,doc,document = init_docx("Nikhil Dusad")
 
 headingsList = []
 
@@ -37,7 +37,4 @@ for paragraph in doc.paragraphs:
             
         break
 
-
-
-boolVar = False
-print(!boolVar)
+lines[86]

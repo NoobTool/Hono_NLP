@@ -146,11 +146,20 @@ def check_with_paragraphs(doc,lines):
             break
     
     try:
-        starting_index = lines.index(headingsList[0])+1
-        ending_index = lines.index(headingsList[1])+1
+        starting_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[0]), item)][0]+1
+        ending_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[1]), item)][0]+1
         
     except IndexError:
-        ending_index = len(lines)
+        if len(headingsList)>0:
+            starting_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[0]), item)][0]+1
+            ending_index = len(lines)
+        
+        else:
+            return []
+    # except ValueError:
+    #     print("Starting index was",starting_index)
+    #     print("word is",headingsList[1])
+    #     print("lines are",lines)
     
     education_lines = lines[starting_index:ending_index-1]
     education_lines = list(filter(('\n').__ne__,education_lines))
@@ -259,6 +268,4 @@ print("Problem Resumes Ratio:-",len(problemResumes)*100/len(df.index))
 
 series_of_failures = df['Qualifications'].apply(lambda x: 1 if '404' in x else 0).tolist()
 print("Ares of failures",series_of_failures.count(0)*100/len(series_of_failures))
-
-
 
