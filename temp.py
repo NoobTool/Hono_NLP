@@ -111,7 +111,8 @@ def return_bold_text(doc,lines):
 def check_each_line(lines,document):
     lines = document.text.splitlines(True)
     lines2 = [line for line in lines if len(line.split(" "))<7]
-    education_lines = [line for line in lines2 if re.match("educat*",line,re.I)]
+    education_lines = [line for line in lines2 if check_for_keywords(line)]
+    # education_lines = [line for line in lines2 if re.match("educat*",line,re.I)]
     try:
         starting_index = lines.index(education_lines[0])+1
         ending_index = len(lines)
@@ -132,6 +133,11 @@ def check_each_line(lines,document):
 
     except IndexError:
         return ["404"]
+
+def check_for_keywords(headings):
+    if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+        return True
+    else: False
 
 # Formatting and refining the output
 def format_points(education_points,*charReplacements):
@@ -169,14 +175,18 @@ if __name__ == '__main__':
                 
 
             # The code to write the output in a text file
-            # with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
-            #     for content in content_to_be_written:
-            #         f.write(content+"\n")
+            with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
+                for content in content_to_be_written:
+                    f.write(content+"\n")
         
         except FileNotFoundError:
             print("The docx version of this file does't exist.")
             
             
+#%% Checking for individual resumes (only for testing purposes)
+
+anujBhai = df.loc[df['Name']=='Anuj Kumar','Qualifications']
+
             
 #%% Failure count
 
