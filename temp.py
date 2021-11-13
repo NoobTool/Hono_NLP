@@ -26,7 +26,7 @@ def init_pdf(fileName):
 
 
 # Returns the educational qualifications from the starting index of educational section
-def return_education_points(lines, headingsDict, bold_text):
+def return_education_points(lines, headingsDict, bold_text_priority,bold_text):
     
     desired_index=None
     next_index = None
@@ -42,7 +42,20 @@ def return_education_points(lines, headingsDict, bold_text):
         if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
             desired_index = index
             continue
+    # Checking for any bold text which is also in capital letters
+    if desired_index is None:
+        for headings,index in bold_text_priority.items():
+            next_index = index
+            
+            # Break the loop when we have both the educational section and the next column's index
+            if desired_index is not None:
+                break
+            
+            if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+                desired_index = index
+                continue
     
+    # Checking for bold text which is not in capitals
     if desired_index is None:
         for headings,index in bold_text.items():
             next_index = index
@@ -54,7 +67,6 @@ def return_education_points(lines, headingsDict, bold_text):
             if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
                 desired_index = index
                 continue
-        
         
     # If an educational section exists
     if desired_index is not None:
@@ -103,8 +115,8 @@ def return_bold_text(doc,lines):
                         bold_text[run.text]=lines.index(run.text)
                 except ValueError:
                     pass      
-    print(bold_text_priority)
-    return bold_text_priority
+                
+    return bold_text_priority,bold_text
 
 
 # Check each line for educational qualifications
@@ -166,10 +178,11 @@ if __name__ == '__main__':
         try:
             if fileName[1]=='docx':
                 lines,doc,document = init_docx(fileName[0])
-                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)),"--\\t","\t")
+                bold_text_priority,bold_text = return_bold_text(doc,lines)
+                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"--\\t","\t")
             else:
                 lines,doc = init_pdf(fileName[0])
-                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),return_bold_text(doc,lines)),"\uf0b7")
+                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"\uf0b7")
                 
             df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
                 
@@ -185,8 +198,12 @@ if __name__ == '__main__':
             
 #%% Checking for individual resumes (only for testing purposes)
 
-anujBhai = df.loc[df['Name']=='Anuj Kumar','Qualifications']
+# Finding problem resumes
 
+problemResumes = []
+df.apply(lambda x: problemResumes.append(x['Name']) if (len(x['Qualifications'])>10) else None,axis=1)
+
+print(len(problemResumes)*100/len(df.index))
             
 #%% Failure count
 
