@@ -12,7 +12,7 @@ def init_docx(fileName):
     # doc2 = docx2python(file_path,html=True)
     doc = Document(file_path)
     text = document.text
-    lines = [sentences.strip() for sentences in text.split("\n") if len(sentences)>0]
+    lines = [sentences.strip() for sentences in text.split("\n") if len(sentences.strip())>0]
 
     return lines,doc,document
 
@@ -178,7 +178,7 @@ def check_each_line(lines,document):
         starting_index = lines.index(education_lines[0])+1
         ending_index = len(lines)
         
-        for x in range(starting_index,len(lines)):
+        for x in range(starting_index,ending_index):
             try:
                 if lines[x+1]=='\n' and lines[x+2]=='\n':
                     ending_index = x+2
@@ -230,7 +230,7 @@ if __name__ == '__main__':
                 content_to_be_written = return_education_points(lines,return_headings(lines),bold_text_priority,bold_text)
                 
                 # If the extracted information contains more than just the educational information required.
-                if len(content_to_be_written)<=10:
+                if len(content_to_be_written)<=20:
                     content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"--\\t","\t")
                 else:
                     content_to_be_written = format_points(check_with_paragraphs(doc,lines))
@@ -257,7 +257,7 @@ if __name__ == '__main__':
 # Finding problem resumes
 
 problemResumes = []
-df.apply(lambda x: problemResumes.append(x['Name']) if (len(x['Qualifications'])>15) else None,axis=1)
+df.apply(lambda x: problemResumes.append(x['Name']) if (len(x['Qualifications'])>20) else None,axis=1)
 
 print("Problem Resumes Ratio:-",len(problemResumes)*100/len(df.index))
 
@@ -266,6 +266,20 @@ print("Problem Resumes Ratio:-",len(problemResumes)*100/len(df.index))
             
 #%% Failure count
 
-series_of_failures = df['Qualifications'].apply(lambda x: 1 if '404' in x else 0).tolist()
+series_of_failures = df['Qualifications'].apply(lambda x: 1 if '404' in x or x==[] else 0).tolist()
 print("Ares of failures",series_of_failures.count(0)*100/len(series_of_failures))
+
+
+
+#%% Test Cell
+
+
+
+
+
+
+
+
+
+
 
