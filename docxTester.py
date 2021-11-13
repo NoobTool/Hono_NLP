@@ -19,4 +19,25 @@ def init_docx(fileName):
 
 lines,doc,document = init_docx("Anuj Kumar")
 
-print(lines)
+headingsList = []
+
+for paragraph in doc.paragraphs:
+    
+    for run in paragraph.runs:
+        
+        # print(run.text)
+        if len(headingsList)==2:
+            pass
+        
+        if len(headingsList)==1 and run.text!='':
+            headingsList.append(run.text)
+            
+        if re.match("educat*",run.text,re.I) or re.match("qualifi*",run.text,re.I):
+            headingsList.append(run.text)
+            
+        break
+
+
+
+boolVar = False
+print(!boolVar)

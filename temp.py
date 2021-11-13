@@ -12,7 +12,7 @@ def init_docx(fileName):
     # doc2 = docx2python(file_path,html=True)
     doc = Document(file_path)
     text = document.text
-    lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
+    lines = [sentences.strip() for sentences in text.split("\n") if len(sentences)>0]
 
     return lines,doc,document
 
@@ -21,7 +21,7 @@ def init_pdf(fileName):
     with pdfplumber.open(r"./Resumes/{}.pdf".format(fileName)) as pdf:
         text = pdf.pages[0].extract_text()
         lines = text.split("\n")
-
+        lines = [line.strip() for line in lines]
     return lines,doc
 
 
@@ -90,7 +90,7 @@ def return_headings(lines):
                  headingsDict[lines[lineNo].strip()] = lineNo
          except IndexError:
              break
-     print("Headings are:- ",headingsDict)
+     # print("Headings are:- ",headingsDict)
      return headingsDict
 
 
@@ -115,8 +115,48 @@ def return_bold_text(doc,lines):
                         bold_text[run.text]=lines.index(run.text)
                 except ValueError:
                     pass      
-                
+    # print("Bold Text:-",bold_text)
+    # print("Bold Text Priority:-",bold_text_priority)            
     return bold_text_priority,bold_text
+
+
+# Go through the document paragraph-by-paragraph, take the first line as the heading and check if it marks educational qualifications
+def check_with_paragraphs(doc,lines):
+    headingsList = []
+    continueLoop = True    
+    
+    for paragraph in doc.paragraphs:
+        
+        # If we have met the conditions, we will break the loop using this quickly
+        if continueLoop:
+            for run in paragraph.runs:
+    
+                if len(headingsList)==2:
+                    continueLoop = False
+                    break
+                
+                if len(headingsList)==1 and run.text!='':
+                    headingsList.append(run.text)
+                    
+                if re.match("educat*",run.text,re.I) or re.match("qualifi*",run.text,re.I):
+                    headingsList.append(run.text)
+                    
+                break
+        else:
+            break
+    
+    try:
+        starting_index = lines.index(headingsList[0])+1
+        ending_index = lines.index(headingsList[1])+1
+        
+    except IndexError:
+        ending_index = len(lines)
+    
+    education_lines = lines[starting_index:ending_index-1]
+    education_lines = list(filter(('\n').__ne__,education_lines))
+    education_lines = [line.replace('\n','') for line in education_lines]
+    
+    return education_lines
 
 
 # Check each line for educational qualifications
@@ -124,7 +164,7 @@ def check_each_line(lines,document):
     lines = document.text.splitlines(True)
     lines2 = [line for line in lines if len(line.split(" "))<7]
     education_lines = [line for line in lines2 if check_for_keywords(line)]
-    # education_lines = [line for line in lines2 if re.match("educat*",line,re.I)]
+    
     try:
         starting_index = lines.index(education_lines[0])+1
         ending_index = len(lines)
@@ -156,9 +196,6 @@ def format_points(education_points,*charReplacements):
     
     for replacement in charReplacements:
         education_points = [points.replace(replacement,"") for points in education_points]
-        
-    # education_points = [points.replace("--\\t","") for points in education_points]
-    # education_points = [points.replace("\t","") for points in education_points]
     return education_points
     
 
@@ -176,10 +213,20 @@ if __name__ == '__main__':
     for files in getCurrentFileNames:
         fileName = files.split(".")
         try:
+            
+            # If the document is a docx document
             if fileName[1]=='docx':
                 lines,doc,document = init_docx(fileName[0])
                 bold_text_priority,bold_text = return_bold_text(doc,lines)
-                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"--\\t","\t")
+                content_to_be_written = return_education_points(lines,return_headings(lines),bold_text_priority,bold_text)
+                
+                # If the extracted information contains more than just the educational information required.
+                if len(content_to_be_written)<=10:
+                    content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"--\\t","\t")
+                else:
+                    content_to_be_written = format_points(check_with_paragraphs(doc,lines))
+                
+            # If the document is a pdf document
             else:
                 lines,doc = init_pdf(fileName[0])
                 content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"\uf0b7")
@@ -193,7 +240,7 @@ if __name__ == '__main__':
                     f.write(content+"\n")
         
         except FileNotFoundError:
-            print("The docx version of this file does't exist.")
+            pass
             
             
 #%% Checking for individual resumes (only for testing purposes)
@@ -201,14 +248,17 @@ if __name__ == '__main__':
 # Finding problem resumes
 
 problemResumes = []
-df.apply(lambda x: problemResumes.append(x['Name']) if (len(x['Qualifications'])>10) else None,axis=1)
+df.apply(lambda x: problemResumes.append(x['Name']) if (len(x['Qualifications'])>15) else None,axis=1)
 
-print(len(problemResumes)*100/len(df.index))
+print("Problem Resumes Ratio:-",len(problemResumes)*100/len(df.index))
+
+
+# print(df.loc[df['Name']=='Anuj Kumar']['Qualifications'])
             
 #%% Failure count
 
 series_of_failures = df['Qualifications'].apply(lambda x: 1 if '404' in x else 0).tolist()
-print(series_of_failures.count(0)*100/len(series_of_failures))
+print("Ares of failures",series_of_failures.count(0)*100/len(series_of_failures))
 
 
 
