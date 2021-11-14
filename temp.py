@@ -225,7 +225,9 @@ def return_lines_using_wordCount(lines):
     lineNumber = [lineNo for lineNo in range(len(lines)) if check_for_keywords(lines[lineNo])][0]
     temp = lineNumber+1
     
-    try:    
+    try:
+        
+        # Check if there are more than 3 words in a line or number marking cgpa/percentage/gpa etc.
         while(len(lines[temp].split(" "))>=3 or re.fullmatch("[0-9]+\.*[0-9]* *%* *[A-z]*",lines[temp]) is not None):
             temp+=1
     except IndexError:
