@@ -9,12 +9,12 @@ import pandas as pd
 def init_docx(fileName):
     file_path = 'Resumes/{}.docx'.format(fileName)
     document = docx2python(file_path)
-    # doc2 = docx2python(file_path,html=True)
+    doc2 = docx2python(file_path,html=True)
     doc = Document(file_path)
     text = document.text
     lines = [sentences.strip() for sentences in text.split("\n") if len(sentences.strip())>0]
 
-    return lines,doc,document
+    return lines,doc,document,doc2
 
 
 def init_pdf(fileName):
@@ -213,15 +213,15 @@ def check_each_line(lines,document):
                     
             except IndexError:
                 pass
-                
-        education_lines = lines[starting_index:ending_index-1]
-        education_lines = list(filter(('\n').__ne__,education_lines))
-        education_lines = [line.replace('\n','') for line in education_lines]
-        
-        return education_lines
+
+        return retLines(lines,starting_index,ending_index-1)
 
     except IndexError:
         return ["404"]
+
+
+def return_lines_using_wordCount():
+    pass
 
 def check_for_keywords(headings):
     if re.match("education*",headings,re.I) or re.match("ac?dem*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
@@ -252,7 +252,7 @@ if __name__ == '__main__':
     df = pd.DataFrame(columns=['Name','Qualifications'])
     
     cwd = os.getcwd()
-    getCurrentFileNames = os.listdir(cwd+"/Resumes/")
+    getCurrentFileNames = os.listdir(cwd+"/Resume/")
     
     for files in getCurrentFileNames:
         fileName = files.split(".")
@@ -260,7 +260,7 @@ if __name__ == '__main__':
             
             # If the document is a docx document
             if fileName[1]=='docx':
-                lines,doc,document = init_docx(fileName[0])
+                lines,doc,document,doc2 = init_docx(fileName[0])
                 bold_text_priority,bold_text = return_bold_text(doc,lines)
                 content_to_be_written = return_education_points(lines,return_headings(lines),bold_text_priority,bold_text)
                 
@@ -276,8 +276,6 @@ if __name__ == '__main__':
                         content_to_be_written = format_points(return_lines(lines))
                     else:
                         content_to_be_written = format_points(content_to_be_written,"--\\t","\t")
-                
-                print(content_to_be_written)
                     
             # If the document is a pdf document
             else:
@@ -286,7 +284,9 @@ if __name__ == '__main__':
                 
             df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
                 
-
+            print(lines)
+            
+            
             # The code to write the output in a text file
             with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
                 for content in content_to_be_written:
