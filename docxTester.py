@@ -12,29 +12,36 @@ def init_docx(fileName):
     doc2 = docx2python(file_path,html=True)
     doc = Document(file_path)
     text = doc2.text
-    lines = [sentences for sentences in text.split("\n") if len(sentences)>0]
+    lines = [sentences.strip() for sentences in text.split("\n") if len(sentences.strip())>0]
 
     return lines,doc,document
 
 
-lines,doc,document = init_docx("Nikhil Dusad")
+lines,doc,document = init_docx("Nikita Garg")
 
 headingsList = []
+
+
+
+
 
 for paragraph in doc.paragraphs:
     
     for run in paragraph.runs:
         
-        # print(run.text)
+        print(run.text)
         if len(headingsList)==2:
             pass
         
-        if len(headingsList)==1 and run.text!='':
+        if len(headingsList)==1 and run.text.strip()!='':
             headingsList.append(run.text)
+            print(run.style.name)
             
-        if re.match("educat*",run.text,re.I) or re.match("qualifi*",run.text,re.I):
+        if re.match("educat*",run.text,re.I) or re.match("acade*",run.text,re.I):
             headingsList.append(run.text)
+            print(run.style.name)
             
         break
 
-lines[86]
+#%%
+print(headingsList)

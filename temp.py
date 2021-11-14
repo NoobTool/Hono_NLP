@@ -85,14 +85,41 @@ def return_headings(lines):
      headingsDict = {}   
      for lineNo in range(len(lines)):
          try:
-             if (re.match("--\\t*",lines[lineNo])==None and re.match("--\\t*",lines[lineNo+1])) or\
+             if (re.match("--*",lines[lineNo])==None and re.match("--*",lines[lineNo+1])) or\
              (re.match('\uf0b7+',lines[lineNo]) is None and re.match('\uf0b7+',lines[lineNo+1]) is not None):
                  headingsDict[lines[lineNo].strip()] = lineNo
          except IndexError:
              break
-     # print("Headings are:- ",headingsDict)
      return headingsDict
 
+# Function to return education lines
+def return_lines(lines):
+    starting_index = None
+    ending_index = None
+    for lineNo in range(len(lines)):
+        if (check_for_keywords(lines[lineNo]) and check_for_bullets(lines[lineNo+1])):
+                starting_index = lineNo+1
+                
+        if starting_index is not None:
+            try:
+                temp = lineNo+1
+                while(check_for_bullets(lines[temp])):
+                    print(check_for_bullets(lines[temp+1]))
+                    temp+=1
+                ending_index = temp
+                        
+            except IndexError:
+                ending_index = len(lines)
+                
+            break
+            
+    
+    education_lines = lines[starting_index:ending_index]
+    education_lines = list(filter(('\n').__ne__,education_lines))
+    education_lines = [line.replace('\n','') for line in education_lines]
+    
+    return education_lines
+                    
 
 # Check for bold text
 def return_bold_text(doc,lines):
@@ -124,21 +151,22 @@ def return_bold_text(doc,lines):
 def check_with_paragraphs(doc,lines):
     headingsList = []
     continueLoop = True    
+    # lines = [sentences.strip() for sentences in doc.text.split("\n") if len(sentences.strip())>0]
     
     for paragraph in doc.paragraphs:
         
-        # If we have met the conditions, we will break the loop using this quickly
+        # If we have met the conditions, we will break the loop using continueLoop. 
         if continueLoop:
             for run in paragraph.runs:
-    
+                
                 if len(headingsList)==2:
                     continueLoop = False
                     break
                 
-                if len(headingsList)==1 and run.text!='':
+                if len(headingsList)==1 and len(run.text.strip())>0:
                     headingsList.append(run.text)
                     
-                if re.match("educat*",run.text,re.I) or re.match("qualifi*",run.text,re.I):
+                if check_for_keywords(run.text):
                     headingsList.append(run.text)
                     
                 break
@@ -149,6 +177,7 @@ def check_with_paragraphs(doc,lines):
         starting_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[0]), item)][0]+1
         ending_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[1]), item)][0]+1
         
+        
     except IndexError:
         if len(headingsList)>0:
             starting_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[0]), item)][0]+1
@@ -156,17 +185,16 @@ def check_with_paragraphs(doc,lines):
         
         else:
             return []
-    # except ValueError:
-    #     print("Starting index was",starting_index)
-    #     print("word is",headingsList[1])
-    #     print("lines are",lines)
     
+    print("headingsList is:-",headingsList)
+    return retLines(lines,starting_index,ending_index)
+
+
+def retLines(lines,starting_index,ending_index):
     education_lines = lines[starting_index:ending_index-1]
     education_lines = list(filter(('\n').__ne__,education_lines))
     education_lines = [line.replace('\n','') for line in education_lines]
-    
     return education_lines
-
 
 # Check each line for educational qualifications
 def check_each_line(lines,document):
@@ -196,9 +224,16 @@ def check_each_line(lines,document):
         return ["404"]
 
 def check_for_keywords(headings):
-    if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+    if re.match("education*",headings,re.I) or re.match("ac?dem*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
         return True
     else: False
+    
+    
+def check_for_bullets(text):
+    if re.match("--*",text) is not None or re.match('\uf0b7+',text) is not None:
+                    return True
+                        
+    else: return False
 
 # Formatting and refining the output
 def format_points(education_points,*charReplacements):
@@ -231,10 +266,19 @@ if __name__ == '__main__':
                 
                 # If the extracted information contains more than just the educational information required.
                 if len(content_to_be_written)<=20:
-                    content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"--\\t","\t")
+                    content_to_be_written = format_points(content_to_be_written,"--\\t","\t")
                 else:
+                    # print("in else with",fileName[0])
+                    
                     content_to_be_written = format_points(check_with_paragraphs(doc,lines))
+                    
+                    if len(content_to_be_written)>20:
+                        content_to_be_written = format_points(return_lines(lines))
+                    else:
+                        content_to_be_written = format_points(content_to_be_written,"--\\t","\t")
                 
+                print(content_to_be_written)
+                    
             # If the document is a pdf document
             else:
                 lines,doc = init_pdf(fileName[0])
