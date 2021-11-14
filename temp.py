@@ -220,8 +220,17 @@ def check_each_line(lines,document):
         return ["404"]
 
 
-def return_lines_using_wordCount():
-    pass
+def return_lines_using_wordCount(lines):
+    
+    lineNumber = [lineNo for lineNo in range(len(lines)) if check_for_keywords(lines[lineNo])][0]
+    temp = lineNumber+1
+    
+    try:    
+        while(len(lines[temp].split(" "))>=3 and re.match("[0-9]+/.*")):
+            temp+=1
+    except IndexError:
+        pass
+    return retLines(lines,lineNumber+1,temp+1)
 
 def check_for_keywords(headings):
     if re.match("education*",headings,re.I) or re.match("ac?dem*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
@@ -284,7 +293,7 @@ if __name__ == '__main__':
                 
             df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
                 
-            print(lines)
+            print(return_lines_using_wordCount(lines))
             
             
             # The code to write the output in a text file
