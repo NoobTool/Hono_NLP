@@ -22,12 +22,11 @@ def init_pdf(fileName):
         text = pdf.pages[0].extract_text()
         lines = text.split("\n")
         lines = [line.strip() for line in lines]
-    return lines,doc
+    return lines
 
 
-# Returns the educational qualifications from the starting index of educational section
-def return_education_points(lines, headingsDict, bold_text_priority,bold_text):
-    
+
+def return_points(lines, headingsDict):
     desired_index=None
     next_index = None
     
@@ -42,43 +41,38 @@ def return_education_points(lines, headingsDict, bold_text_priority,bold_text):
         if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
             desired_index = index
             continue
-    # Checking for any bold text which is also in capital letters
-    if desired_index is None:
-        for headings,index in bold_text_priority.items():
-            next_index = index
-            
-            # Break the loop when we have both the educational section and the next column's index
-            if desired_index is not None:
-                break
-            
-            if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
-                desired_index = index
-                continue
     
-    # Checking for bold text which is not in capitals
-    if desired_index is None:
-        for headings,index in bold_text.items():
-            next_index = index
-            
-            # Break the loop when we have both the educational section and the next column's index
-            if desired_index is not None:
-                break
-            
-            if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
-                desired_index = index
-                continue
+    return desired_index,next_index
+
+
+
+
+# Returns the educational qualifications from the starting index of educational section
+# def return_education_points(lines, headingsDict, bold_text_priority,bold_text):
+
+def return_education_points(*headingDicts):
+
+    for headingsDict in headingDicts:
         
-    # If an educational section exists
-    if desired_index is not None:
+        if type(headingsDict) is not list:
+            desired_index,next_index = return_points(lines, headingsDict)
         
-        # If in case the educational section is the last section, print till end of doc, otherwise till next heading
-        if next_index!=desired_index:
-            return lines[desired_index+1:next_index]
         else:
-            return lines[desired_index+1:len(lines)]
+            continue
         
-    else:
-        return check_each_line(lines,document)
+        if desired_index is not None:
+            # If in case the educational section is the last section, print till end of doc, otherwise till next heading
+            if next_index!=desired_index:
+                return lines[desired_index+1:next_index]
+            else:
+                return lines[desired_index+1:len(lines)]
+        
+        else:
+            continue
+        
+    
+    return check_each_line(lines,document)
+
 
 # Function to determine the headings in the resume
 def return_headings(lines):
@@ -267,7 +261,7 @@ if __name__ == '__main__':
     df = pd.DataFrame(columns=['Name','Qualifications'])
     
     cwd = os.getcwd()
-    getCurrentFileNames = os.listdir(cwd+"/Resumes/")
+    getCurrentFileNames = os.listdir(cwd+"/Resume/")
     
     for files in getCurrentFileNames:
         fileName = files.split(".")
@@ -296,35 +290,23 @@ if __name__ == '__main__':
                     
             # If the document is a pdf document
             else:
-                lines,doc = init_pdf(fileName[0])
-                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"\uf0b7")
-                
-                if len(content_to_be_written)<=20:
-                    content_to_be_written = format_points(content_to_be_written,"\uf0b7")
-                    
-                else:
-                    # print("in else with",fileName[0])
-                    content_to_be_written = format_points(check_with_paragraphs(doc,lines))
-                    
-                    if len(content_to_be_written)>20:
-                        content_to_be_written = format_points(return_lines(lines))
-                    else:
-                        content_to_be_written = format_points(content_to_be_written,"\uf0b7")
+                lines = init_pdf(fileName[0])
+                headingsDict = return_headings(lines)
+                print(headingsDict)
+                starting_index,ending_index = return_points(lines, headingsDict)
+                content_to_be_written = lines[starting_index:ending_index+1]
                 
                 
-            if len(content_to_be_written)==0:
-                content_to_be_written = format_points(return_lines_using_wordCount(lines))
+            # if len(content_to_be_written)==0:
+            #     content_to_be_written = format_points(return_lines_using_wordCount(lines))
             
-            
-            
-                
-            
-            
+            # Writing the contents to the dataframe
+            df.loc[len(df.index)] = [fileName[0],content_to_be_written]
             
             # The code to write the output in a text file
-            with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
-                for content in content_to_be_written:
-                    f.write(content+"\n")
+            # with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
+            #     for content in content_to_be_written:
+            #         f.write(content+"\n")
         
         except FileNotFoundError:
             pass
