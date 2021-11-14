@@ -4,9 +4,9 @@ from docx import Document
 import os
 import pdfplumber
 import pandas as pd
-import PyPDF2
 
 
+# Function to read a docx file
 def init_docx(fileName):
     file_path = 'Resumes/{}.docx'.format(fileName)
     document = docx2python(file_path)
@@ -17,25 +17,22 @@ def init_docx(fileName):
 
     return lines,doc,document,doc2
 
-
+# Function to read a pdf file
 def init_pdf(fileName):
     with pdfplumber.open(r"./Resumes/{}.pdf".format(fileName)) as pdf:
         text = pdf.pages[0].extract_text()
         lines = text.split("\n")
         lines = [line.strip() for line in lines]
-        
-    doc = PyPDF2.PdfFileReader(open(r"./Resumes/{}.pdf".format(fileName)))
-    document = ""
-    for pageNo in range(doc.getNumPages()):
-        document += doc.getPage(pageNo)
-        
-    return lines, document
+    return lines,doc
 
 
-
-def return_points(lines, headingsDict):
-    desired_index, next_index = None, None
+# Returns the educational qualifications from the starting index of educational section
+def return_education_points(lines, headingsDict, bold_text_priority,bold_text):
     
+    desired_index=None
+    next_index = None
+    
+     
     for headings,index in headingsDict.items():
         next_index = index
         
@@ -43,73 +40,62 @@ def return_points(lines, headingsDict):
         if desired_index is not None:
             break
         
-        if check_for_keywords(headings):
+        if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
             desired_index = index
             continue
+        
+    # Checking for any bold text which is also in capital letters
+    if desired_index is None:
+        for headings,index in bold_text_priority.items():
+            next_index = index
+            
+            # Break the loop when we have both the educational section and the next column's index
+            if desired_index is not None:
+                break
+            
+            if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+                desired_index = index
+                continue
     
-    if next_index is not None and desired_index is not None:
-        if next_index<=desired_index:    
-            return desired_index,len(lines)
+    # Checking for bold text which is not in capitals
+    if desired_index is None:
+        for headings,index in bold_text.items():
+            next_index = index
+            
+            # Break the loop when we have both the educational section and the next column's index
+            if desired_index is not None:
+                break
+            
+            if re.match("education*",headings,re.I) or re.match("academic*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+                desired_index = index
+                continue
+        
+    # If an educational section exists
+    if desired_index is not None:
+        
+        # If in case the educational section is the last section, print till end of doc, otherwise till next heading
+        if next_index!=desired_index:
+            return lines[desired_index+1:next_index]
         else:
-            return desired_index+1, next_index
+            return lines[desired_index+1:len(lines)]
         
     else:
-        return 0,0
+        return check_each_line(lines,document)
 
-
-
-
-# Returns the educational qualifications from the starting index of educational section
-# def return_education_points(lines, headingsDict, bold_text_priority,bold_text):
-
-def return_education_points(*headingDicts):
-
-    for headingsDict in headingDicts:
-        
-        if type(headingsDict) is not list:
-            desired_index,next_index = return_points(lines, headingsDict)
-        
-        else:
-            continue
-        
-        if desired_index is not None:
-            # If in case the educational section is the last section, print till end of doc, otherwise till next heading
-            if next_index!=desired_index:
-                return lines[desired_index+1:next_index]
-            else:
-                return lines[desired_index+1:len(lines)]
-        
-        else:
-            continue
-        
-    
-    return check_each_line(lines,document)
-
-
-# Function to determine the headings in the resume
+# Function to determine the headings in the resume. We try to identify the text above the lines which are bullet points.
 def return_headings(lines):
      headingsDict = {}   
      for lineNo in range(len(lines)):
          try:
+             # Bullet points are present in the text as --/t or \uf0b7
              if (re.match("--*",lines[lineNo])==None and re.match("--*",lines[lineNo+1])) or\
              (re.match('\uf0b7+',lines[lineNo]) is None and re.match('\uf0b7+',lines[lineNo+1]) is not None):
                  headingsDict[lines[lineNo].strip()] = lineNo
          except IndexError:
              break
      return headingsDict
- 
 
-def return_capitals(lines):
-    headingsDict = {}
-    for lineNo in range(len(lines)):
-        if re.sub("[,:]","",lines[lineNo]).isupper():
-            headingsDict[lines[lineNo]] = lineNo
-            
-    return headingsDict
-        
-    
-
-# Function to return education lines
+# Function to return education lines. Does the same thing as one of the other funcs. but takes into consideration the "education" text.
 def return_lines(lines):
     starting_index = None
     ending_index = None
@@ -166,8 +152,7 @@ def return_bold_text(doc,lines):
 # Go through the document paragraph-by-paragraph, take the first line as the heading and check if it marks educational qualifications
 def check_with_paragraphs(doc,lines):
     headingsList = []
-    continueLoop = True
-    starting_index = None    
+    continueLoop = True    
     # lines = [sentences.strip() for sentences in doc.text.split("\n") if len(sentences.strip())>0]
     
     for paragraph in doc.paragraphs:
@@ -196,7 +181,7 @@ def check_with_paragraphs(doc,lines):
         
         
     except IndexError:
-        if len(headingsList)>0 and starting_index is not None:
+        if len(headingsList)>0:
             starting_index = [i for i, item in enumerate(lines) if re.search("{}*".format(headingsList[0]), item)][0]+1
             ending_index = len(lines)
         
@@ -207,6 +192,7 @@ def check_with_paragraphs(doc,lines):
     return retLines(lines,starting_index,ending_index)
 
 
+# Return the respective lines by providing the starting and ending index
 def retLines(lines,starting_index,ending_index):
     education_lines = lines[starting_index:ending_index-1]
     education_lines = list(filter(('\n').__ne__,education_lines))
@@ -236,7 +222,8 @@ def check_each_line(lines,document):
     except IndexError:
         return ["404"]
 
-
+# Using the approach of counting words in a line. Generally, the headings contain no more than 2 words. This is the last approach for 
+# identification.
 def return_lines_using_wordCount(lines):
     
     lineNumber = [lineNo for lineNo in range(len(lines)) if check_for_keywords(lines[lineNo])]
@@ -256,12 +243,14 @@ def return_lines_using_wordCount(lines):
         pass
     return retLines(lines,lineNumber+1,temp+1)
 
+# Checking for words like education, academic and qualifications which are usually used to represent the educational section of the
+# resume
 def check_for_keywords(headings):
-    if re.match("education*",headings,re.I) or re.match("ac?dem*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
+    if re.match("educa*",headings,re.I) or re.match("ac?dem*",headings,re.I) or re.search("qualific*",headings,re.I) is not None:
         return True
     else: False
     
-    
+# Checking for bullets in the text
 def check_for_bullets(text):
     if re.match("--*",text) is not None or re.match('\uf0b7+',text) is not None:
                     return True
@@ -284,12 +273,13 @@ if __name__ == '__main__':
     # Using dataframes to carry the content of all resumes
     df = pd.DataFrame(columns=['Name','Qualifications'])
     
+    # Get the current working directory
     cwd = os.getcwd()
     getCurrentFileNames = os.listdir(cwd+"/Resumes/")
     
+    # Getting the fileNames in the curr. work dir.
     for files in getCurrentFileNames:
         fileName = files.split(".")
-        
         try:
             
             # If the document is a docx document
@@ -314,20 +304,18 @@ if __name__ == '__main__':
                     
             # If the document is a pdf document
             else:
-                content_to_be_written=[]
-                lines=[]
-                # lines, document = init_pdf(fileName[0])
-                # headingsDict = return_capitals(lines)
-                # print(document.text)
-                # starting_index,ending_index = return_points(lines, headingsDict)
-                # content_to_be_written = lines[starting_index:ending_index+1]
-                
-                
+                lines,doc = init_pdf(fileName[0])
+                content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"\uf0b7")
+             
+            # In case the program above fails to identify the relevant content, apply one last method.
             if len(content_to_be_written)==0:
                 content_to_be_written = format_points(return_lines_using_wordCount(lines))
             
-            # Writing the contents to the dataframe
-            df.loc[len(df.index)] = [fileName[0],content_to_be_written]
+            # Writing the data to the dataframe
+            df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
+                
+            # print(return_lines_using_wordCount(lines))
+            
             
             # The code to write the output in a text file
             # with open(cwd+"/Output/"+fileName[0]+".txt","w") as f:
