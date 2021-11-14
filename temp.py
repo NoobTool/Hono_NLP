@@ -104,7 +104,6 @@ def return_lines(lines):
             try:
                 temp = lineNo+1
                 while(check_for_bullets(lines[temp])):
-                    print(check_for_bullets(lines[temp+1]))
                     temp+=1
                 ending_index = temp
                         
@@ -222,7 +221,12 @@ def check_each_line(lines,document):
 
 def return_lines_using_wordCount(lines):
     
-    lineNumber = [lineNo for lineNo in range(len(lines)) if check_for_keywords(lines[lineNo])][0]
+    lineNumber = [lineNo for lineNo in range(len(lines)) if check_for_keywords(lines[lineNo])]
+    if len(lineNumber)>0:
+        lineNumber = lineNumber[0] 
+    else:
+        return [] 
+    
     temp = lineNumber+1
     
     try:
@@ -263,7 +267,7 @@ if __name__ == '__main__':
     df = pd.DataFrame(columns=['Name','Qualifications'])
     
     cwd = os.getcwd()
-    getCurrentFileNames = os.listdir(cwd+"/Resume/")
+    getCurrentFileNames = os.listdir(cwd+"/Resumes/")
     
     for files in getCurrentFileNames:
         fileName = files.split(".")
@@ -276,11 +280,12 @@ if __name__ == '__main__':
                 content_to_be_written = return_education_points(lines,return_headings(lines),bold_text_priority,bold_text)
                 
                 # If the extracted information contains more than just the educational information required.
+                # That is if more content rather than just the educational requirements are extracted.
                 if len(content_to_be_written)<=20:
                     content_to_be_written = format_points(content_to_be_written,"--\\t","\t")
+                    
                 else:
                     # print("in else with",fileName[0])
-                    
                     content_to_be_written = format_points(check_with_paragraphs(doc,lines))
                     
                     if len(content_to_be_written)>20:
@@ -293,9 +298,12 @@ if __name__ == '__main__':
                 lines,doc = init_pdf(fileName[0])
                 content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"\uf0b7")
                 
+            if len(content_to_be_written)==0:
+                content_to_be_written = format_points(return_lines_using_wordCount(lines))
+                
             df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
                 
-            print(return_lines_using_wordCount(lines))
+            # print(return_lines_using_wordCount(lines))
             
             
             # The code to write the output in a text file
@@ -322,7 +330,7 @@ print("Problem Resumes Ratio:-",len(problemResumes)*100/len(df.index))
 #%% Failure count
 
 series_of_failures = df['Qualifications'].apply(lambda x: 1 if '404' in x or x==[] else 0).tolist()
-print("Ares of failures",series_of_failures.count(0)*100/len(series_of_failures))
+print("Ares of success",series_of_failures.count(0)*100/len(series_of_failures))
 
 
 
