@@ -186,7 +186,7 @@ def check_with_paragraphs(doc,lines):
         else:
             return []
     
-    print("headingsList is:-",headingsList)
+    # print("headingsList is:-",headingsList)
     return retLines(lines,starting_index,ending_index)
 
 
@@ -226,7 +226,7 @@ def return_lines_using_wordCount(lines):
     temp = lineNumber+1
     
     try:    
-        while(len(lines[temp].split(" "))>=3 and re.match("[0-9]+/.*")):
+        while(len(lines[temp].split(" "))>=3 or re.fullmatch("[0-9]+\.*[0-9]* *%* *[A-z]*",lines[temp]) is not None):
             temp+=1
     except IndexError:
         pass

@@ -21,27 +21,17 @@ lines,doc,document = init_docx("Nikita Garg")
 
 headingsList = []
 
-
-
-
-
-for paragraph in doc.paragraphs:
+def return_lines_using_wordCount(lines):
     
-    for run in paragraph.runs:
-        
-        print(run.text)
-        if len(headingsList)==2:
-            pass
-        
-        if len(headingsList)==1 and run.text.strip()!='':
-            headingsList.append(run.text)
-            print(run.style.name)
-            
-        if re.match("educat*",run.text,re.I) or re.match("acade*",run.text,re.I):
-            headingsList.append(run.text)
-            print(run.style.name)
-            
-        break
+    lineNumber = [lineNo for lineNo in range(len(lines)) if check_for_keywords(lines[lineNo])][0]
+    temp = lineNumber+1
+    
+    try:    
+        while(len(lines[temp].split(" "))>=3 and re.match("[0-9]+/.*")):
+            temp+=1
+    except IndexError:
+        pass
+    return retLines(lines,lineNumber+1,temp+1)
 
 #%%
 print(headingsList)
