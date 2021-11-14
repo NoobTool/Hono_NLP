@@ -271,6 +271,7 @@ if __name__ == '__main__':
     
     for files in getCurrentFileNames:
         fileName = files.split(".")
+        
         try:
             
             # If the document is a docx document
@@ -298,12 +299,26 @@ if __name__ == '__main__':
                 lines,doc = init_pdf(fileName[0])
                 content_to_be_written = format_points(return_education_points(lines,return_headings(lines),bold_text_priority,bold_text),"\uf0b7")
                 
+                if len(content_to_be_written)<=20:
+                    content_to_be_written = format_points(content_to_be_written,"\uf0b7")
+                    
+                else:
+                    # print("in else with",fileName[0])
+                    content_to_be_written = format_points(check_with_paragraphs(doc,lines))
+                    
+                    if len(content_to_be_written)>20:
+                        content_to_be_written = format_points(return_lines(lines))
+                    else:
+                        content_to_be_written = format_points(content_to_be_written,"\uf0b7")
+                
+                
             if len(content_to_be_written)==0:
                 content_to_be_written = format_points(return_lines_using_wordCount(lines))
+            
+            
+            
                 
-            df.loc[len(df.index)] = [fileName[0],content_to_be_written ]
-                
-            # print(return_lines_using_wordCount(lines))
+            
             
             
             # The code to write the output in a text file
